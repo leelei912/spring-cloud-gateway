@@ -20,6 +20,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
+import org.springframework.cloud.gateway.rsocket.routing.RoutingTable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
@@ -43,6 +44,12 @@ public class GatewayRSocketActuator {
 	 */
 	public static final String ROUTE_REMOVE_PATH = "/actuator/gateway/routeremove";
 
+	private final RoutingTable routingTable;
+
+	public GatewayRSocketActuator(RoutingTable routingTable) {
+		this.routingTable = routingTable;
+	}
+
 	@MessageMapping("hello")
 	public Mono<String> hello(String name) {
 		return Mono.just("Hello " + name);
@@ -51,6 +58,7 @@ public class GatewayRSocketActuator {
 	@MessageMapping(BROKER_INFO_PATH)
 	public BrokerInfo brokerInfo(BrokerInfo brokerInfo) {
 		log.info("BrokerInfo: " + brokerInfo);
+		routingTable.registerBroker(brokerInfo);
 		return brokerInfo;
 	}
 

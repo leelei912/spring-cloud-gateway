@@ -148,8 +148,8 @@ public class GatewayRSocketAutoConfiguration {
 	}
 
 	@Bean
-	public GatewayRSocketActuator gatwayRSocketActuator() {
-		return new GatewayRSocketActuator();
+	public GatewayRSocketActuator gatwayRSocketActuator(RoutingTable routingTable) {
+		return new GatewayRSocketActuator(routingTable);
 	}
 
 }
