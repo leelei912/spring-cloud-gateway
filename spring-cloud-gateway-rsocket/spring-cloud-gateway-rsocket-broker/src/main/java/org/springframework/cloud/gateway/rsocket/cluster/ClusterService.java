@@ -20,7 +20,10 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator;
 import org.springframework.cloud.gateway.rsocket.actuate.BrokerInfo;
+import org.springframework.cloud.gateway.rsocket.actuate.RouteJoin;
+import org.springframework.cloud.gateway.rsocket.common.metadata.Forwarding;
 import org.springframework.cloud.gateway.rsocket.common.metadata.TagsMetadata;
 import org.springframework.core.style.ToStringCreator;
 import org.springframework.messaging.rsocket.RSocketRequester;
@@ -28,12 +31,13 @@ import org.springframework.messaging.rsocket.RSocketRequester;
 public class ClusterService {
 
 	final Map<String, BrokerEntry> incomingBrokers = new ConcurrentHashMap<>();
+
 	final Map<String, RSocketRequester> outgoingBrokers = new ConcurrentHashMap<>();
 
 	public boolean registerIncoming(BrokerInfo brokerInfo) {
 		String brokerId = brokerInfo.getBrokerId().toString();
 
-		//TODO: validate that there is a corresponding route in RoutingTable
+		// TODO: validate that there is a corresponding route in RoutingTable
 		if (incomingBrokers.containsKey(brokerId)) {
 			BrokerEntry brokerEntry = incomingBrokers.get(brokerId);
 			if (brokerEntry.timestamp < brokerInfo.getTimestamp()) {
@@ -51,9 +55,22 @@ public class ClusterService {
 	}
 
 	public boolean registerOutgoing(String routeId, RSocketRequester requester) {
-		//TODO: BrokerClient instead of RSocketRequester?
-		//TODO: validation
+		// TODO: BrokerClient instead of RSocketRequester?
+		// TODO: validation
 		outgoingBrokers.put(routeId, requester);
+		return true;
+	}
+
+	public boolean send(RouteJoin routeJoin) {
+		outgoingBrokers.values().forEach(requester -> {
+			Forwarding forwarding = Forwarding.of(routeJoin.getRouteId())
+					.serviceName("gateway").disableProxy().build();
+			requester.route(BrokerActuator.ROUTE_JOIN_PATH)
+					.metadata(forwarding, Forwarding.FORWARDING_MIME_TYPE).data(routeJoin)
+					.retrieveMono(RouteJoin.class)
+					.subscribe(res -> System.out.println("RouteJoin: " + res));
+		});
+		return true;
 	}
 
 	static class BrokerEntry {

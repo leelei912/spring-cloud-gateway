@@ -35,6 +35,8 @@ import org.springframework.boot.rsocket.server.RSocketServerFactory;
 import org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator;
 import org.springframework.cloud.gateway.rsocket.actuate.BrokerActuatorHandlerRegistration;
 import org.springframework.cloud.gateway.rsocket.cluster.ClusterJoinListener;
+import org.springframework.cloud.gateway.rsocket.cluster.ClusterService;
+import org.springframework.cloud.gateway.rsocket.cluster.RouteJoinListener;
 import org.springframework.cloud.gateway.rsocket.common.autoconfigure.GatewayRSocketCommonAutoConfiguration;
 import org.springframework.cloud.gateway.rsocket.core.GatewayRSocketFactory;
 import org.springframework.cloud.gateway.rsocket.core.GatewayServerRSocketFactoryCustomizer;
@@ -67,12 +69,6 @@ import static org.springframework.cloud.gateway.rsocket.common.autoconfigure.Gat
 @AutoConfigureBefore(RSocketServerAutoConfiguration.class)
 @AutoConfigureAfter(GatewayRSocketCommonAutoConfiguration.class)
 public class GatewayRSocketAutoConfiguration {
-
-	@Bean
-	public ClusterJoinListener clusterJoinListener(BrokerProperties properties,
-			RSocketStrategies strategies) {
-		return new ClusterJoinListener(properties, strategies);
-	}
 
 	@Bean
 	public RoutingTable routingTable() {
@@ -162,8 +158,35 @@ public class GatewayRSocketAutoConfiguration {
 	}
 
 	@Bean
-	public BrokerActuator brokerActuator(RoutingTable routingTable) {
-		return new BrokerActuator(routingTable);
+	public BrokerActuator brokerActuator(BrokerProperties properties,
+			ClusterService clusterService, RoutingTable routingTable) {
+		return new BrokerActuator(properties, clusterService, routingTable);
+	}
+
+	@Configuration
+	@ConditionalOnProperty(name = "spring.cloud.gateway.rsocket.cluster.enabled",
+			matchIfMissing = true)
+	protected static class ClusterConfiguration {
+
+		@Bean
+		public ClusterService clusterService() {
+			return new ClusterService();
+		}
+
+		@Bean
+		public ClusterJoinListener clusterJoinListener(ClusterService clusterService,
+				BrokerProperties properties, RSocketStrategies strategies,
+				GatewayRSocketFactory gatewayRSocketFactory) {
+			return new ClusterJoinListener(clusterService, properties, strategies,
+					gatewayRSocketFactory);
+		}
+
+		@Bean
+		public RouteJoinListener routeJoinListener(ClusterService clusterService,
+				RoutingTable routingTable, BrokerProperties properties) {
+			return new RouteJoinListener(clusterService, routingTable, properties);
+		}
+
 	}
 
 }

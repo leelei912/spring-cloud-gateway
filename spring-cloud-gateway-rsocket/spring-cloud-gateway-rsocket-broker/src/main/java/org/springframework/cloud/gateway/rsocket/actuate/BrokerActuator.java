@@ -17,13 +17,18 @@
 package org.springframework.cloud.gateway.rsocket.actuate;
 
 import java.math.BigInteger;
+import java.util.List;
 
+import io.rsocket.RSocket;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 import org.springframework.cloud.gateway.rsocket.autoconfigure.BrokerProperties;
 import org.springframework.cloud.gateway.rsocket.cluster.ClusterService;
+import org.springframework.cloud.gateway.rsocket.common.metadata.TagsMetadata;
+import org.springframework.cloud.gateway.rsocket.routing.RoutingTable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
@@ -48,11 +53,16 @@ public class BrokerActuator {
 	public static final String ROUTE_REMOVE_PATH = "/actuator/gateway/routeremove";
 
 	private final BrokerProperties properties;
+
 	private final ClusterService clusterService;
 
-	public BrokerActuator(BrokerProperties properties, ClusterService clusterService) {
+	private final RoutingTable routingTable;
+
+	public BrokerActuator(BrokerProperties properties, ClusterService clusterService,
+			RoutingTable routingTable) {
 		this.properties = properties;
 		this.clusterService = clusterService;
+		this.routingTable = routingTable;
 	}
 
 	@MessageMapping("hello")
@@ -70,6 +80,28 @@ public class BrokerActuator {
 	@MessageMapping(ROUTE_JOIN_PATH)
 	public RouteJoin routeJoin(RouteJoin routeJoin) {
 		log.info("RouteJoin: " + routeJoin);
+		TagsMetadata findBrokerQuery = TagsMetadata.builder()
+				.routeId(routeJoin.getBrokerId().toString()).build();
+		List<Tuple2<String, RSocket>> rSockets = routingTable
+				.findRSockets(findBrokerQuery);
+
+		if (rSockets.size() != 1) {
+			// should only be one broker
+			if (log.isDebugEnabled()) {
+				log.debug("Expected 1 RSocket for broker: " + routeJoin.getBrokerId()
+						+ ", found " + rSockets.size());
+			}
+			return null;
+		}
+		RSocket brokerRSocket = rSockets.iterator().next().getT2();
+		TagsMetadata.Builder tags = TagsMetadata.builder();
+		// TODO: other tags.
+		// routeJoin.getTags().forEach(tags::with);
+		tags.routeId(routeJoin.getRouteId().toString())
+				.serviceName(routeJoin.getServiceName());
+
+		routingTable.register(tags.build(), brokerRSocket);
+		// TODO: unregister on close/error etc...
 		return routeJoin;
 	}
 

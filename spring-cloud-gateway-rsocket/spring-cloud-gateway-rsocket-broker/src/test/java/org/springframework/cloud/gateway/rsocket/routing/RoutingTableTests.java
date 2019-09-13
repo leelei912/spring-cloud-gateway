@@ -26,7 +26,6 @@ import org.roaringbitmap.RoaringBitmap;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import org.springframework.cloud.gateway.rsocket.actuate.BrokerInfo;
 import org.springframework.cloud.gateway.rsocket.common.metadata.TagsMetadata;
 import org.springframework.cloud.gateway.rsocket.common.metadata.WellKnownKey;
 import org.springframework.core.style.ToStringCreator;
@@ -148,24 +147,6 @@ public class RoutingTableTests {
 		});
 
 		return rsocket;
-	}
-
-	@Test
-	public void registerBrokerWorks() {
-		RoutingTable routingTable = new RoutingTable();
-
-		BrokerInfo brokerInfo = BrokerInfo.of(1L).timestamp(100L).build();
-		boolean result = routingTable.registerBroker(brokerInfo);
-
-		String brokerId = brokerInfo.getBrokerId().toString();
-		assertThat(result).isTrue();
-		assertThat(routingTable.brokerEntries).containsKey(brokerId);
-
-		brokerInfo = BrokerInfo.of(1L).timestamp(10L).build();
-		result = routingTable.registerBroker(brokerInfo);
-		assertThat(result).isFalse();
-		assertThat(routingTable.brokerEntries.get(brokerId)).isNotNull()
-				.extracting(RoutingTable.BrokerEntry::getTimestamp).isEqualTo(100L);
 	}
 
 	static class TestRSocket extends AbstractRSocket {

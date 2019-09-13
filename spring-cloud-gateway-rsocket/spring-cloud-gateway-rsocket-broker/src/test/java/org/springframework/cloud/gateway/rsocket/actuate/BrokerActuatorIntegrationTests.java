@@ -16,6 +16,7 @@
 
 package org.springframework.cloud.gateway.rsocket.actuate;
 
+import java.math.BigInteger;
 import java.util.Random;
 
 import org.junit.AfterClass;
@@ -30,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cloud.gateway.rsocket.cluster.ClusterService;
 import org.springframework.cloud.gateway.rsocket.common.metadata.Forwarding;
 import org.springframework.cloud.gateway.rsocket.common.metadata.RouteSetup;
 import org.springframework.messaging.rsocket.RSocketRequester;
@@ -43,13 +46,17 @@ import static org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator.R
 import static org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator.ROUTE_REMOVE_PATH;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(webEnvironment = RANDOM_PORT,
+		properties = "spring.cloud.gateway.rsocket.cluster.enabled=false")
 public class BrokerActuatorIntegrationTests {
 
 	private final Random random = new Random();
 
 	@Autowired
 	private RSocketRequester.Builder requesterBuilder;
+
+	@MockBean
+	private ClusterService clusterService;
 
 	// @LocalServerPort
 	private static int port;
@@ -72,11 +79,11 @@ public class BrokerActuatorIntegrationTests {
 
 		BrokerInfo data = BrokerInfo.of(brokerId).build();
 
-		Mono<BrokerInfo> result = callActuator(brokerId, BrokerInfo.class, data,
+		Mono<BigInteger> result = callActuator(brokerId, BigInteger.class, data,
 				BROKER_INFO_PATH);
 
-		StepVerifier.create(result)
-				.consumeNextWith(res -> assertThat(res).isNotNull().isEqualTo(data))
+		StepVerifier.create(result).consumeNextWith(
+				res -> assertThat(res).isNotNull().isEqualTo(BigInteger.valueOf(1234L)))
 				.verifyComplete();
 	}
 
@@ -112,7 +119,8 @@ public class BrokerActuatorIntegrationTests {
 				.verifyComplete();
 	}
 
-	private <T> Mono<T> callActuator(long brokerId, Class<T> type, T data, String path) {
+	private <T, D> Mono<T> callActuator(long brokerId, Class<T> type, D data,
+			String path) {
 		RouteSetup routeSetup = RouteSetup.of(brokerId, "brokerInfoTest").build();
 
 		RSocketRequester requester = requesterBuilder

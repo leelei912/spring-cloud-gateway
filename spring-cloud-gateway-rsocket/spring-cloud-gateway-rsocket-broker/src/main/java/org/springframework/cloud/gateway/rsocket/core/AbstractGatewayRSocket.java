@@ -46,9 +46,8 @@ public abstract class AbstractGatewayRSocket extends AbstractRSocket
 
 	private final TagsMetadata metadata;
 
-	AbstractGatewayRSocket(MeterRegistry meterRegistry,
-			BrokerProperties properties, MetadataExtractor metadataExtractor,
-			TagsMetadata metadata) {
+	AbstractGatewayRSocket(MeterRegistry meterRegistry, BrokerProperties properties,
+			MetadataExtractor metadataExtractor, TagsMetadata metadata) {
 		this.meterRegistry = meterRegistry;
 		this.properties = properties;
 		this.metadataExtractor = metadataExtractor;
