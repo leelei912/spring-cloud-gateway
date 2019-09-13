@@ -38,13 +38,13 @@ import org.springframework.util.SocketUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
-import static org.springframework.cloud.gateway.rsocket.actuate.GatewayRSocketActuator.BROKER_INFO_PATH;
-import static org.springframework.cloud.gateway.rsocket.actuate.GatewayRSocketActuator.ROUTE_JOIN_PATH;
-import static org.springframework.cloud.gateway.rsocket.actuate.GatewayRSocketActuator.ROUTE_REMOVE_PATH;
+import static org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator.BROKER_INFO_PATH;
+import static org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator.ROUTE_JOIN_PATH;
+import static org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator.ROUTE_REMOVE_PATH;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-public class GatewayRSocketActuatorIntegrationTests {
+public class BrokerActuatorIntegrationTests {
 
 	private final Random random = new Random();
 

@@ -59,7 +59,7 @@ public class GatewayRSocketAutoConfigurationTests {
 						.hasSingleBean(RoutingTableRoutes.class)
 						.hasSingleBean(RoutingTableSocketAcceptorFilter.class)
 						.hasSingleBean(GatewayServerRSocketFactoryCustomizer.class)
-						.hasSingleBean(GatewayRSocketProperties.class)
+						.hasSingleBean(BrokerProperties.class)
 						.hasSingleBean(GatewaySocketAcceptor.class)
 						.hasSingleBean(SocketAcceptorPredicateFilter.class)
 						.hasSingleBean(RSocketServerBootstrap.class)

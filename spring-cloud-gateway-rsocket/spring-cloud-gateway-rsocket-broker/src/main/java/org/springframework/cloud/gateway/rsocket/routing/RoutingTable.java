@@ -16,7 +16,6 @@
 
 package org.springframework.cloud.gateway.rsocket.routing;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -40,7 +39,6 @@ import reactor.core.publisher.FluxSink;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import org.springframework.cloud.gateway.rsocket.actuate.BrokerInfo;
 import org.springframework.cloud.gateway.rsocket.common.metadata.TagsMetadata;
 import org.springframework.cloud.gateway.rsocket.common.metadata.WellKnownKey;
 import org.springframework.core.style.ToStringCreator;
@@ -65,8 +63,6 @@ public class RoutingTable {
 
 	final Map<String, RouteEntry> routeEntries = new ConcurrentHashMap<>();
 
-	final Map<String, BrokerEntry> brokerEntries = new ConcurrentHashMap<>();
-
 	private final DirectProcessor<RegisteredEvent> registeredEvents = DirectProcessor
 			.create();
 
@@ -74,25 +70,6 @@ public class RoutingTable {
 			.sink(FluxSink.OverflowStrategy.DROP);
 
 	public RoutingTable() {
-	}
-
-	public boolean registerBroker(BrokerInfo brokerInfo) {
-		String brokerId = brokerInfo.getBrokerId().toString();
-
-		if (brokerEntries.containsKey(brokerId)) {
-			BrokerEntry brokerEntry = brokerEntries.get(brokerId);
-			if (brokerEntry.timestamp < brokerInfo.getTimestamp()) {
-				brokerEntries.put(brokerId, new BrokerEntry(brokerInfo.getBrokerId(),
-						brokerInfo.getTags(), brokerInfo.getTimestamp()));
-				return true;
-			}
-		}
-		else {
-			brokerEntries.put(brokerId, new BrokerEntry(brokerInfo.getBrokerId(),
-					brokerInfo.getTags(), brokerInfo.getTimestamp()));
-			return true;
-		}
-		return false;
 	}
 
 	// TODO: Mono<Void>?
@@ -252,44 +229,6 @@ public class RoutingTable {
 			return this.routeEntry.getRSocket();
 		}
 
-	}
-
-	static class BrokerEntry {
-
-		private final BigInteger brokerId;
-
-		private final Map<TagsMetadata.Key, String> tags;
-
-		private final Long timestamp;
-
-		BrokerEntry(BigInteger brokerId, Map<TagsMetadata.Key, String> tags, Long timestamp) {
-			this.brokerId = brokerId;
-			this.tags = tags;
-			this.timestamp = timestamp;
-		}
-
-		public BigInteger getBrokerId() {
-			return this.brokerId;
-		}
-
-		public Map<TagsMetadata.Key, String> getTags() {
-			return this.tags;
-		}
-
-		public Long getTimestamp() {
-			return this.timestamp;
-		}
-
-		@Override
-		public String toString() {
-			// @formatter:off
-			return new ToStringCreator(this)
-					.append("brokerId", brokerId)
-					.append("tags", tags)
-					.append("timestamp", timestamp)
-					.toString();
-			// @formatter:on
-		}
 	}
 
 	static class RouteEntry {

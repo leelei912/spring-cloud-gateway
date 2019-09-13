@@ -16,18 +16,21 @@
 
 package org.springframework.cloud.gateway.rsocket.actuate;
 
+import java.math.BigInteger;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
-import org.springframework.cloud.gateway.rsocket.routing.RoutingTable;
+import org.springframework.cloud.gateway.rsocket.autoconfigure.BrokerProperties;
+import org.springframework.cloud.gateway.rsocket.cluster.ClusterService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
 @Controller
-public class GatewayRSocketActuator {
+public class BrokerActuator {
 
-	private static final Log log = LogFactory.getLog(GatewayRSocketActuator.class);
+	private static final Log log = LogFactory.getLog(BrokerActuator.class);
 
 	/**
 	 * Path for BrokerInfo actuator endpoint.
@@ -44,10 +47,12 @@ public class GatewayRSocketActuator {
 	 */
 	public static final String ROUTE_REMOVE_PATH = "/actuator/gateway/routeremove";
 
-	private final RoutingTable routingTable;
+	private final BrokerProperties properties;
+	private final ClusterService clusterService;
 
-	public GatewayRSocketActuator(RoutingTable routingTable) {
-		this.routingTable = routingTable;
+	public BrokerActuator(BrokerProperties properties, ClusterService clusterService) {
+		this.properties = properties;
+		this.clusterService = clusterService;
 	}
 
 	@MessageMapping("hello")
@@ -56,10 +61,10 @@ public class GatewayRSocketActuator {
 	}
 
 	@MessageMapping(BROKER_INFO_PATH)
-	public BrokerInfo brokerInfo(BrokerInfo brokerInfo) {
+	public BigInteger brokerInfo(BrokerInfo brokerInfo) {
 		log.info("BrokerInfo: " + brokerInfo);
-		routingTable.registerBroker(brokerInfo);
-		return brokerInfo;
+		clusterService.registerIncoming(brokerInfo);
+		return properties.getRouteId();
 	}
 
 	@MessageMapping(ROUTE_JOIN_PATH)

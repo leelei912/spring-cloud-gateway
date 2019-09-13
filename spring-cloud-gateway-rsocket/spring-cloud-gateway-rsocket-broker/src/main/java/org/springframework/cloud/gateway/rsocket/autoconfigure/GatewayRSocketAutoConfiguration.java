@@ -16,11 +16,14 @@
 
 package org.springframework.cloud.gateway.rsocket.autoconfigure;
 
+import java.math.BigInteger;
 import java.util.List;
+import java.util.function.Supplier;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.rsocket.RSocket;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -29,8 +32,9 @@ import org.springframework.boot.autoconfigure.rsocket.RSocketServerAutoConfigura
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.rsocket.server.RSocketServerBootstrap;
 import org.springframework.boot.rsocket.server.RSocketServerFactory;
-import org.springframework.cloud.gateway.rsocket.actuate.GatewayRSocketActuator;
-import org.springframework.cloud.gateway.rsocket.actuate.GatewayRSocketActuatorRegistrar;
+import org.springframework.cloud.gateway.rsocket.actuate.BrokerActuator;
+import org.springframework.cloud.gateway.rsocket.actuate.BrokerActuatorHandlerRegistration;
+import org.springframework.cloud.gateway.rsocket.cluster.ClusterJoinListener;
 import org.springframework.cloud.gateway.rsocket.common.autoconfigure.GatewayRSocketCommonAutoConfiguration;
 import org.springframework.cloud.gateway.rsocket.core.GatewayRSocketFactory;
 import org.springframework.cloud.gateway.rsocket.core.GatewayServerRSocketFactoryCustomizer;
@@ -50,6 +54,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.messaging.rsocket.RSocketStrategies;
 import org.springframework.messaging.rsocket.annotation.support.RSocketMessageHandler;
 
+import static org.springframework.cloud.gateway.rsocket.common.autoconfigure.GatewayRSocketCommonAutoConfiguration.ID_GENERATOR_BEAN_NAME;
+
 /**
  * @author Spencer Gibb
  */
@@ -61,6 +67,12 @@ import org.springframework.messaging.rsocket.annotation.support.RSocketMessageHa
 @AutoConfigureBefore(RSocketServerAutoConfiguration.class)
 @AutoConfigureAfter(GatewayRSocketCommonAutoConfiguration.class)
 public class GatewayRSocketAutoConfiguration {
+
+	@Bean
+	public ClusterJoinListener clusterJoinListener(BrokerProperties properties,
+			RSocketStrategies strategies) {
+		return new ClusterJoinListener(properties, strategies);
+	}
 
 	@Bean
 	public RoutingTable routingTable() {
@@ -96,19 +108,21 @@ public class GatewayRSocketAutoConfiguration {
 	public GatewayRSocketFactory gatewayRSocketFactory(RoutingTable routingTable,
 			Routes routes, PendingRequestRSocketFactory pendingFactory,
 			LoadBalancerFactory loadBalancerFactory, MeterRegistry meterRegistry,
-			GatewayRSocketProperties properties, RSocketStrategies rSocketStrategies) {
+			BrokerProperties properties, RSocketStrategies rSocketStrategies) {
 		return new GatewayRSocketFactory(routingTable, routes, pendingFactory,
 				loadBalancerFactory, meterRegistry, properties,
 				rSocketStrategies.metadataExtractor());
 	}
 
 	@Bean
-	public GatewayRSocketProperties gatewayRSocketProperties(Environment env) {
-		GatewayRSocketProperties properties = new GatewayRSocketProperties();
+	public BrokerProperties brokerProperties(Environment env,
+			@Qualifier(ID_GENERATOR_BEAN_NAME) Supplier<BigInteger> idGenerator) {
+		BrokerProperties properties = new BrokerProperties();
+		// set default from env
 		if (env.containsProperty("spring.application.name")) {
-			properties.setId(env.getProperty("spring.application.name")); // set default
-																			// from env
+			properties.setId(env.getProperty("spring.application.name"));
 		}
+		properties.setRouteId(idGenerator.get());
 		return properties;
 	}
 
@@ -121,14 +135,14 @@ public class GatewayRSocketAutoConfiguration {
 	@Bean
 	public GatewaySocketAcceptor socketAcceptor(GatewayRSocketFactory rsocketFactory,
 			List<SocketAcceptorFilter> filters, MeterRegistry meterRegistry,
-			GatewayRSocketProperties properties, RSocketStrategies rSocketStrategies) {
+			BrokerProperties properties, RSocketStrategies rSocketStrategies) {
 		return new GatewaySocketAcceptor(rsocketFactory, filters, meterRegistry,
 				properties, rSocketStrategies.metadataExtractor());
 	}
 
 	@Bean
 	public GatewayServerRSocketFactoryCustomizer gatewayServerRSocketFactoryCustomizer(
-			GatewayRSocketProperties properties, MeterRegistry meterRegistry) {
+			BrokerProperties properties, MeterRegistry meterRegistry) {
 		return new GatewayServerRSocketFactoryCustomizer(properties, meterRegistry);
 	}
 
@@ -140,16 +154,16 @@ public class GatewayRSocketAutoConfiguration {
 	}
 
 	@Bean
-	public GatewayRSocketActuatorRegistrar gatewayRSocketActuatorRegistrar(
+	public BrokerActuatorHandlerRegistration brokerActuatorHandlerRegistration(
 			RoutingTable routingTable, RSocketMessageHandler messageHandler,
-			GatewayRSocketProperties properties) {
-		return new GatewayRSocketActuatorRegistrar(routingTable, messageHandler,
+			BrokerProperties properties) {
+		return new BrokerActuatorHandlerRegistration(routingTable, messageHandler,
 				properties);
 	}
 
 	@Bean
-	public GatewayRSocketActuator gatwayRSocketActuator(RoutingTable routingTable) {
-		return new GatewayRSocketActuator(routingTable);
+	public BrokerActuator brokerActuator(RoutingTable routingTable) {
+		return new BrokerActuator(routingTable);
 	}
 
 }
