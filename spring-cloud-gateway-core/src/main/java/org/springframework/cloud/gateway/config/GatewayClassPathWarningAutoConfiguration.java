@@ -33,6 +33,13 @@ public class GatewayClassPathWarningAutoConfiguration {
 
 	private static final String BORDER = "\n\n**********************************************************\n\n";
 
+	/**
+	 * 用于检查项目是否错误导入了mvc相关的包
+	 * @ConditionalOnBean         //	当给定的在bean存在时,则实例化当前Bean
+	 * @ConditionalOnMissingBean  //	当给定的在bean不存在时,则实例化当前Bean
+	 * @ConditionalOnClass        //	当给定的类名在类路径上存在，则实例化当前Bean
+	 * @ConditionalOnMissingClass //	当给定的类名在类路径上不存在，则实例化当前Bean
+	 */
 	@Configuration
 	@ConditionalOnClass(name = "org.springframework.web.servlet.DispatcherServlet")
 	protected static class SpringMvcFoundOnClasspathConfiguration {
@@ -44,7 +51,10 @@ public class GatewayClassPathWarningAutoConfiguration {
 		}
 
 	}
-
+	/**
+	 * 检查项目是否正确导入 spring-boot-starter-webflux 依赖，
+	 * 如果不存在webflux的dispatcher就实例化该类，用来打印警告
+	 */
 	@Configuration
 	@ConditionalOnMissingClass("org.springframework.web.reactive.DispatcherHandler")
 	protected static class WebfluxMissingFromClasspathConfiguration {

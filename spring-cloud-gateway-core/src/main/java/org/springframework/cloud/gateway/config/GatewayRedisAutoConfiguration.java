@@ -55,6 +55,13 @@ class GatewayRedisAutoConfiguration {
 		return redisScript;
 	}
 
+	/**
+	 * redis限流功能RedisRateLimiter初始化
+ 	 * @param redisTemplate
+	 * @param redisScript
+	 * @param configurationService
+	 * @return
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public RedisRateLimiter redisRateLimiter(ReactiveStringRedisTemplate redisTemplate,

@@ -41,7 +41,12 @@ import org.springframework.web.reactive.DispatcherHandler;
 @AutoConfigureAfter(RibbonAutoConfiguration.class)
 @EnableConfigurationProperties(LoadBalancerProperties.class)
 public class GatewayLoadBalancerClientAutoConfiguration {
-
+	/**
+	 * 为{@link LoadBalancerClientFilter}进行自动配置，LoadBalancerClientFilter初始化
+	 * @param client
+	 * @param properties
+	 * @return
+	 */
 	@Bean
 	@ConditionalOnBean(LoadBalancerClient.class)
 	@ConditionalOnMissingBean({ LoadBalancerClientFilter.class,

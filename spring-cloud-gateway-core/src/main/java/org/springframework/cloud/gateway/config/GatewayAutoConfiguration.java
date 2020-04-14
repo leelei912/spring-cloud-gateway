@@ -151,6 +151,7 @@ import static org.springframework.cloud.gateway.config.HttpClientProperties.Pool
 import static org.springframework.cloud.gateway.config.HttpClientProperties.Pool.PoolType.FIXED;
 
 /**
+ * spring gateway核心配置类
  * @author Spencer Gibb
  */
 @Configuration
@@ -554,6 +555,9 @@ public class GatewayAutoConfiguration {
 		return new RequestHeaderSizeGatewayFilterFactory();
 	}
 
+	/**
+	 * httpclient存在基础上进行配置，是reactor netty
+	 */
 	@Configuration
 	@ConditionalOnClass(HttpClient.class)
 	protected static class NettyConfiguration {
@@ -573,6 +577,11 @@ public class GatewayAutoConfiguration {
 			};
 		}
 
+		/**
+		 * 1.2 HttpClient这个类的实例不存在时实例化该bean
+		 * @param properties
+		 * @return
+		 */
 		@Bean
 		@ConditionalOnMissingBean
 		public HttpClient gatewayHttpClient(HttpClientProperties properties) {
@@ -591,7 +600,11 @@ public class GatewayAutoConfiguration {
 			else {
 				connectionProvider = ConnectionProvider.elastic(pool.getName());
 			}
-
+			/**
+			 * 优雅的创建一个HttpClient实例，优不优雅我也不知道
+			 * Function	Function< T, R >	接收T对象，返回R对象
+			 * 接收tcpClient的超类，返回tcpClient的子类
+			 */
 			HttpClient httpClient = HttpClient.create(connectionProvider)
 					.tcpConfiguration(tcpClient -> {
 
@@ -667,6 +680,12 @@ public class GatewayAutoConfiguration {
 			return httpClient;
 		}
 
+		/**
+		 * 1.1先实例化一个client的属性
+		 * 这类里面会利用@ConfigurationProperties注解来将配置文件中
+		 * 以spring.cloud.gateway.httpclient开头的属性宽松绑定到类中的属性去
+		 * @return
+		 */
 		@Bean
 		public HttpClientProperties httpClientProperties() {
 			return new HttpClientProperties();
